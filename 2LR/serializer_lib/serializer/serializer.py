@@ -37,6 +37,36 @@ TYPE_FIELD = "TYPE"
 VALUE_FIELD = "VALUE"
 
 CLASS_TYPE_REGEX = "\'([\w\W]+)\'"
+CLASS_ARGS = [
+    '__doc__',
+    '__name__',
+    '__qualname__',
+    '__module__'
+]
+
+
+def serialize_class(cl):
+    result = {}
+    details = inspect.getmembers(cl, inspect.isclass(cl))
+    for detail in details:
+        if inspect.isbuiltin(detail[1]):
+            continue
+        if detail[0] in CLASS_ARGS:
+            result[detail[0]] = serialize_obj(detail[1])
+            if detail[0] == CODE_FIELD:
+                result[GLOBALS] = {}
+                glob = cl.__getattribute__(GLOBALS)
+                for name in detail[1].__getattribute__(GLOBALS_FIELDS):
+                    if name == cl.__name__:
+                        result[GLOBALS][name] = cl.__name__
+                        continue
+                    if name in __builtins__:
+                        continue
+                    if name in glob:
+                        if inspect.ismodule(glob[name]):
+                            continue
+                        result[GLOBALS][name] = serialize_obj(glob[name])
+    return result
 
 
 def serialize_obj(obj):
